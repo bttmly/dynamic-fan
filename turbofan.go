@@ -8,6 +8,7 @@ import (
 func New(chans ...chan bool) {
 	cases := make([]reflect.SelectCase, len(chans))
 	go func() {
+		// http://stackoverflow.com/questions/19992334/how-to-listen-to-n-channels-dynamic-select-statement
 		for i, ch := range chans {
 			cases[i] = reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(ch)}
 		}
