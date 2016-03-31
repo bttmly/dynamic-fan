@@ -24,7 +24,7 @@ var _ = Describe("Turbofan", func() {
 	})
 
 	Context("Turbofan", func() {
-		It("Works as expected", func(done Done) {
+		It("Other channels receive when one sends", func(done Done) {
 			turbofan.New(a, b, c)
 			go func() {
 				fromB := <-b
@@ -35,6 +35,20 @@ var _ = Describe("Turbofan", func() {
 				close(done)
 			}()
 			a <- true
+		}, 0.5)
+
+		It("All channels receive on .Blast()", func(done Done) {
+			t := turbofan.New(a, b, c)
+			go func() {
+				fromA := <-a
+				Expect(fromA).To(BeTrue())
+				fromB := <-b
+				Expect(fromB).To(BeTrue())
+				fromC := <-c
+				Expect(fromC).To(BeTrue())
+				close(done)
+			}()
+			t.Blast(true)
 		}, 0.5)
 	})
 
