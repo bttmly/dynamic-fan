@@ -37,7 +37,7 @@ var _ = Describe("Turbofan", func() {
 			a <- true
 		}, 0.5)
 
-		It("All channels receive on .Blast()", func(done Done) {
+		It("All channels receive on .Broadcast()", func(done Done) {
 			t := turbofan.New(a, b, c)
 			go func() {
 				fromA := <-a
@@ -48,7 +48,18 @@ var _ = Describe("Turbofan", func() {
 				Expect(fromC).To(BeTrue())
 				close(done)
 			}()
-			t.Blast(true)
+			t.Broadcast(true)
+		}, 0.5)
+
+		It("All channels close on .Close()", func(done Done) {
+			t := turbofan.New(a, b, c)
+			go func() {
+				<-a
+				<-b
+				<-c
+				close(done)
+			}()
+			t.Close()
 		}, 0.5)
 	})
 

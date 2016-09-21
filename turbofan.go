@@ -3,35 +3,50 @@ package turbofan
 import "reflect"
 
 type Turbofan struct {
-	Blast func(bool)
+	chans []chan bool
+	closed bool
 }
 
-// New just creates a new turbofan
-func New(chans ...chan bool) *Turbofan {
-	t := &Turbofan{}
+func (t *Turbofan) Broadcast(b bool) {
+	for _, ch := range t.chans {
+		ch <- b
+	}
+}
 
+func (t *Turbofan) Close() {
+	t.closed = true
+	for _, ch := range t.chans {
+		close(ch)
+	}
+}
+
+func (t *Turbofan) init() {
 	// http://stackoverflow.com/questions/19992334/how-to-listen-to-n-channels-dynamic-select-statement
-	cases := make([]reflect.SelectCase, len(chans))
-	for i, ch := range chans {
+	cases := make([]reflect.SelectCase, len(t.chans))
+	for i, ch := range t.chans {
 		cases[i] = reflect.SelectCase{Dir: reflect.SelectRecv, Chan: reflect.ValueOf(ch)}
 	}
 
 	go func() {
 		for {
 			chosen, value, _ := reflect.Select(cases)
-			for j, ch := range chans {
+
+			if (t.closed) { 
+				return 
+			}
+
+			val := value.Bool()
+			for j, ch := range t.chans {
 				if j != chosen {
-					ch <- value.Bool()
+					ch <- val
 				}
 			}
 		}
 	}()
+}
 
-	t.Blast = func(b bool) {
-		for _, ch := range chans {
-			ch <- b
-		}
-	}
-
+func New(chans ...chan bool) *Turbofan {
+	t := &Turbofan{chans, false}
+	t.init()
 	return t
 }
